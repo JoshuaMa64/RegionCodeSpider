@@ -37,102 +37,189 @@ namespace RegionCodeSpider
                                        }).ToList();
 
             // 获取市级代码
-            foreach (var province in provinceCodeList)
+            if (File.Exists("city.csv"))
             {
-                Task.Delay(100);
-                Console.WriteLine($"获取{province.Name}数据……");
-                var htmlcity = SendGET($"{baseUrl}/{province.Url}");
-                var list = htmlcity.DocumentNode.Descendants("a")
-                    .Where(i => i.ParentNode.ParentNode.Attributes["class"].Value == "citytr")
-                    .Select(i => new RegionCode
-                    {
-                        Url = i.Attributes["href"].Value,
-                        Name = i.InnerText
-                    }).ToList();
-                for (int i = 0; i < list.Count; i += 2)
+                using (var reader = new StreamReader("city.csv"))
+                using (var csv = new CsvReader(reader))
                 {
-                    cityCodeList.Add(new RegionCode
+                    cityCodeList = csv.GetRecords<RegionCode>().ToList();
+                }
+            }
+            else
+            {
+                foreach (var province in provinceCodeList)
+                {
+                    Task.Delay(100);
+                    Console.WriteLine($"获取{province.Name}数据……");
+                    var htmlcity = SendGET($"{baseUrl}/{province.Url}");
+                    var list = htmlcity.DocumentNode.Descendants("a")
+                        .Where(i => i.ParentNode.ParentNode.Attributes["class"].Value == "citytr")
+                        .Select(i => new RegionCode
+                        {
+                            Url = i.Attributes["href"].Value,
+                            Name = i.InnerText
+                        }).ToList();
+                    for (int i = 0; i < list.Count; i += 2)
                     {
-                        Url = list[i].Url,
-                        Code = list[i].Name,
-                        Name = $"{province.Name}{list[i + 1].Name}"
-                    });
-                    Console.WriteLine($"{list[i].Name}  {list[i + 1].Name}");
+                        cityCodeList.Add(new RegionCode
+                        {
+                            Url = list[i].Url,
+                            Code = list[i].Name,
+                            Name = $"{province.Name} {list[i + 1].Name}"
+                        });
+                        Console.WriteLine($"{list[i].Name}  {list[i + 1].Name}");
+                    }
                 }
             }
 
+            using (StreamWriter writer = new StreamWriter("city.csv"))
+            using (CsvWriter csvWriter = new CsvWriter(writer))
+            {
+                csvWriter.WriteRecords(cityCodeList);
+            }
 
             // 获取县级代码
-            foreach (var city in cityCodeList)
+            if (File.Exists("county.csv"))
             {
-                Task.Delay(100);
-                var htmlcounty = SendGET($"{baseUrl}/{city.Url}");
-                var list = htmlcounty.DocumentNode.Descendants("td")
-                    .Where(i => i.ParentNode.Attributes["class"]?.Value == "countytr" &&
-                                i.InnerHtml == i.InnerText)
-                .Select(i => new RegionCode
+                using (var reader = new StreamReader("county.csv"))
+                using (var csv = new CsvReader(reader))
                 {
-                    Name = i.InnerText
-                }).ToList();
-                list.AddRange(htmlcounty.DocumentNode.Descendants("a")
-                    .Where(i => i.ParentNode.ParentNode.Attributes["class"].Value == "countytr")
-                .Select(i => new RegionCode
-                {
-                    Url = $"{city.Url.Split('/')[0]}/{i.Attributes["href"].Value}",
-                    Name = i.InnerText
-                }).ToList());
-
-                for (int i = 0; i < list.Count; i += 2)
-                {
-                    countyCodeList.Add(new RegionCode
-                    {
-                        Url = list[i].Url,
-                        Code = list[i].Name,
-                        Name = $"{city.Name}{list[i + 1].Name}"
-                    });
-                    Console.WriteLine($"{list[i].Name}  {list[i + 1].Name}");
+                    countyCodeList = csv.GetRecords<RegionCode>().ToList();
                 }
+            }
+            else
+            {
+                foreach (var city in cityCodeList)
+                {
+                    Task.Delay(100);
+                    var htmlcounty = SendGET($"{baseUrl}/{city.Url}");
+                    var list = htmlcounty.DocumentNode.Descendants("td")
+                        .Where(i => i.ParentNode.Attributes["class"]?.Value == "countytr" &&
+                                    i.InnerHtml == i.InnerText)
+                    .Select(i => new RegionCode
+                    {
+                        Name = i.InnerText
+                    }).ToList();
+                    list.AddRange(htmlcounty.DocumentNode.Descendants("a")
+                        .Where(i => i.ParentNode.ParentNode.Attributes["class"].Value == "countytr")
+                    .Select(i => new RegionCode
+                    {
+                        Url = $"{city.Url.Split('/')[0]}/{i.Attributes["href"].Value}",
+                        Name = i.InnerText
+                    }).ToList());
+
+                    for (int i = 0; i < list.Count; i += 2)
+                    {
+                        countyCodeList.Add(new RegionCode
+                        {
+                            Url = list[i].Url,
+                            Code = list[i].Name,
+                            Name = $"{city.Name} {list[i + 1].Name}"
+                        });
+                        Console.WriteLine($"{list[i].Name}  {list[i + 1].Name}");
+                    }
+                }
+            }
+
+            using (StreamWriter writer = new StreamWriter("county.csv"))
+            using (CsvWriter csvWriter = new CsvWriter(writer))
+            {
+                csvWriter.WriteRecords(countyCodeList);
             }
 
             // 获取镇级代码
-            foreach (var county in countyCodeList)
+            if (File.Exists("town.csv"))
             {
-                Task.Delay(100);
-                var htmltown = SendGET($"{baseUrl}/{county.Url}");
-                var list = htmltown.DocumentNode.Descendants("td")
-                    .Where(i => i.ParentNode.Attributes["class"]?.Value == "towntr" &&
-                                i.InnerHtml == i.InnerText)
-                .Select(i => new RegionCode
+                using (var reader = new StreamReader("town.csv"))
+                using (var csv = new CsvReader(reader))
                 {
-                    Name = i.InnerText
-                }).ToList();
-                list.AddRange(htmltown.DocumentNode.Descendants("a")
-                    .Where(i => i.ParentNode.ParentNode.Attributes["class"].Value == "towntr")
-                .Select(i => new RegionCode
-                {
-                    Url = i.Attributes["href"].Value,
-                    Name = i.InnerText
-                }).ToList());
-
-                for (int i = 0; i < list.Count; i += 2)
-                {
-                    townCodeList.Add(new RegionCode
-                    {
-                        Url = list[i].Url,
-                        Code = list[i].Name,
-                        Name = $"{county.Name}{list[i + 1].Name}"
-                    });
-                    Console.WriteLine($"{list[i].Name}  {list[i + 1].Name}");
+                    townCodeList = csv.GetRecords<RegionCode>().ToList();
                 }
             }
+            else
+            {
+                foreach (var county in countyCodeList)
+                {
+                    Task.Delay(100);
+                    var htmltown = SendGET($"{baseUrl}/{county.Url}");
+                    var list = htmltown.DocumentNode.Descendants("td")
+                        .Where(i => i.ParentNode.Attributes["class"]?.Value == "towntr" &&
+                                    i.InnerHtml == i.InnerText)
+                    .Select(i => new RegionCode
+                    {
+                        Name = i.InnerText
+                    }).ToList();
+                    list.AddRange(htmltown.DocumentNode.Descendants("a")
+                        .Where(i => i.ParentNode.ParentNode.Attributes["class"].Value == "towntr")
+                    .Select(i => new RegionCode
+                    {
+                        Url = $"{county.Url.Split('/')[0]}/{i.Attributes["href"].Value}",
+                        Name = i.InnerText
+                    }).ToList());
 
-            Console.WriteLine("代码获取结束。");
+                    for (int i = 0; i < list.Count; i += 2)
+                    {
+                        townCodeList.Add(new RegionCode
+                        {
+                            Url = list[i].Url,
+                            Code = list[i].Name,
+                            Name = $"{county.Name} {list[i + 1].Name}"
+                        });
+                        Console.WriteLine($"{list[i].Name}  {list[i + 1].Name}");
+                    }
+                }
+            }
 
             using (StreamWriter writer = new StreamWriter("town.csv"))
             using (CsvWriter csvWriter = new CsvWriter(writer))
             {
                 csvWriter.WriteRecords(townCodeList);
             }
+
+            // 获取村级代码
+            if (File.Exists("village.csv"))
+            {
+                using (var reader = new StreamReader("village.csv"))
+                using (var csv = new CsvReader(reader))
+                {
+                    villageCodeList = csv.GetRecords<RegionCode>().ToList();
+                }
+            }
+            else
+            {
+                foreach (var town in townCodeList)
+                {
+                    Task.Delay(100);
+                    var htmlvillage = SendGET($"{baseUrl}/{town.Url}");
+                    var list = htmlvillage.DocumentNode.Descendants("td")
+                        .Where(i => i.ParentNode.Attributes["class"]?.Value == "villagetr" &&
+                                    i.InnerHtml == i.InnerText)
+                    .Select(i => new RegionCode
+                    {
+                        Name = i.InnerText
+                    }).ToList();
+
+                    for (int i = 0; i < list.Count; i += 3)
+                    {
+                        villageCodeList.Add(new RegionCode
+                        {
+                            Code = list[i].Name,
+                            Name = $"{town.Name}{list[i + 2].Name}"
+                        });
+                        Console.WriteLine($"{list[i].Name}  {list[i + 2].Name}");
+                    }
+                }
+            }            
+
+            Console.WriteLine("代码获取结束。");
+
+            using (StreamWriter writer = new StreamWriter("village.csv"))
+            using (CsvWriter csvWriter = new CsvWriter(writer))
+            {
+                csvWriter.WriteRecords(villageCodeList);
+            }
+
+            Console.WriteLine("代码已保存。");
             Console.ReadLine();
         }
 
