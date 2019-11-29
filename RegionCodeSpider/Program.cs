@@ -153,7 +153,7 @@ namespace RegionCodeSpider
                         .Where(i => i.ParentNode.ParentNode.Attributes["class"].Value == "towntr")
                     .Select(i => new RegionCode
                     {
-                        Url = $"{county.Url.Split('/')[0]}/{i.Attributes["href"].Value}",
+                        Url = $"{county.Url.Split('/')[0]}/{county.Url.Split('/')[1]}/{i.Attributes["href"].Value}",
                         Name = i.InnerText
                     }).ToList());
 
